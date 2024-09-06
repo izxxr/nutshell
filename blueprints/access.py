@@ -22,8 +22,9 @@
 
 from __future__ import annotations
 
-from quart import Blueprint, abort, redirect, render_template, request, g
+from quart import Blueprint, abort, redirect, render_template, request
 from datetime import datetime, timezone
+from common.cache import getcache
 from models.link import Link
 
 
@@ -36,7 +37,7 @@ access = Blueprint("access", __name__)
 
 
 async def get_link(code: str):
-    link = await Link.get_or_none(code=code)
+    link = await getcache().getch(code)
     if link is None:
         abort(404, "Don't know what are you up to but that link DOES NOT exist!")
     if not link.active:
@@ -52,9 +53,7 @@ async def register_visit(link: Link):
 @access.get("/<code>")
 @access.post("/<code>")
 async def access_link(code: str):
-    link = g.get("link")
-    if link is None:
-        g.link = link = await get_link(code)
+    link = await get_link(code)
 
     if request.method != "POST":
         link.raw_visit_count += 1

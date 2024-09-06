@@ -24,7 +24,8 @@ from __future__ import annotations
 
 from quart import Blueprint, Response, request
 from pydantic import ValidationError
-from common import auth_required
+from common.decor import auth_required
+from common.cache import getcache
 from models.link import LinkSchema, Link
 
 __all__ = (
@@ -38,11 +39,16 @@ links = Blueprint("links", __name__, url_prefix="/links")
 @auth_required
 async def create_link():
     data = await request.get_json() or {}
-
     try:
         link = LinkSchema(**data)
     except ValidationError as err:
         return err.errors(include_input=False), 400
+
+    cache = getcache()
+    link = await cache.get_link(link.code)
+
+    if link is not None:
+        return {"error": "Code is taken."}, 409
 
     db_link = await Link.create(
         code=link.code,
@@ -58,7 +64,7 @@ async def create_link():
 @links.get("/<code>")
 @auth_required
 async def get_link(code: str):
-    link = await Link.get_or_none(code=code)
+    link = await getcache().getch(code)
     if link is None:
         return {"error": "Link not found."}, 404
 
@@ -74,10 +80,12 @@ async def get_all_links():
 @links.delete("/<code>")
 @auth_required
 async def delete_link(code: str):
-    link = await Link.get_or_none(code=code)
+    cache = getcache()
+    link = await cache.getch(code)
     if link is None:
         return {"error": "Link not found."}, 404
 
+    cache.delete_link(code)
     await link.delete()
     return Response(None), 204
 
@@ -85,7 +93,7 @@ async def delete_link(code: str):
 @links.patch("/<code>")
 @auth_required
 async def update_link(code: str):
-    link = await Link.get_or_none(code=code)
+    link = await getcache().getch(code)
     if link is None:
         return {"error": "Link not found."}, 404
 

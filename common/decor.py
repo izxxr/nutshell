@@ -22,42 +22,40 @@
 
 from __future__ import annotations
 
-from quart import Quart, redirect
-from tortoise import Tortoise
-from os import environ
-from common.cache import LRUCache
-from blueprints.links import links
-from blueprints.access import access
+from typing import Any
+from quart import request, abort
+from functools import wraps
+
+import os
+import dotenv
 
 __all__ = (
-    "app",
+    "auth_required"
 )
 
+dotenv.load_dotenv()
 
-app = Quart("__name__")
-app.config["TORTOISE_SETUP_DONE"] = False
-app.config["LINKS_CACHE"] = LRUCache(maxlen=int(environ.get("NUTSHELL_CACHE_LIMIT", 50)))
-app.register_blueprint(links)
-app.register_blueprint(access)
+try:
+    AUTH_TOKEN = os.environ["NUTSHELL_AUTH_TOKEN"]
+except KeyError:
+    raise RuntimeError("No authorization token supplied in environment variables.")
+else:
+    assert len(AUTH_TOKEN) > 10, "NUTSHELL_AUTH_TOKEN must be greater than 10 characters in length."
 
+def auth_required(f):
+    """Decorator to ensure authorized access to a route."""
+    @wraps(f)
+    async def decorated_function(*args: Any, **kwargs: Any):
+        auth = request.headers.get("Authorization")
+        if not auth:
+            return await abort(401, {"error": "This resource requires authorization."})
 
-@app.get("/")
-async def index():
-    return redirect("https://github.com/izxxr")
+        scheme, token = auth.strip().split(" ")
+        if scheme != "Bearer":
+            return await abort(400, {"error": "Unsupported authorization scheme used."})
+        if token != AUTH_TOKEN:
+            return await abort(403, {"error": "Authorization failed."})
 
+        return await f(*args, **kwargs)
 
-@app.before_request
-async def before_request_hook():
-    if not app.config.get("TORTOISE_SETUP_DONE", True):
-        print("[DATABASE] Generating database schema")
-
-        await Tortoise.init(
-            db_url='sqlite://db.sqlite3',
-            modules={'models': ['models']}
-        )
-        await Tortoise.generate_schemas()
-
-        app.config["TORTOISE_SETUP_DONE"] = True
-
-if __name__ == "__main__":
-    app.run()
+    return decorated_function
