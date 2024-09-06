@@ -49,7 +49,7 @@ async def index():
 @app.before_request
 async def before_request_hook():
     if not app.config.get("TORTOISE_SETUP_DONE", True):
-        print("[DATABASE] Generating database schema")
+        print("[DATABASE] Generating database schema (one time invocation)")
 
         await Tortoise.init(
             db_url='sqlite://db.sqlite3',
