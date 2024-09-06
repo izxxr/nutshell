@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 from quart import Quart, redirect
+from uvicorn import run
 from tortoise import Tortoise
 from os import environ
 from common.cache import LRUCache
@@ -60,4 +61,4 @@ async def before_request_hook():
         app.config["TORTOISE_SETUP_DONE"] = True
 
 if __name__ == "__main__":
-    app.run()
+    run("server.api:app", host="0.0.0.0", port=3000, reload=False)
