@@ -58,6 +58,3 @@ async def before_request_hook():
         await Tortoise.generate_schemas()
 
         app.config["TORTOISE_SETUP_DONE"] = True
-
-if __name__ == "__main__":
-    app.run()
