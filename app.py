@@ -22,11 +22,10 @@
 
 from __future__ import annotations
 
-from quart import Quart, redirect, abort, render_template, request, g
+from quart import Quart, redirect
 from tortoise import Tortoise
 from blueprints.links import links
-from models.link import Link
-from datetime import datetime, timezone
+from blueprints.access import access
 
 __all__ = (
     "app",
@@ -36,46 +35,13 @@ __all__ = (
 app = Quart("__name__")
 app.config["TORTOISE_SETUP_DONE"] = False
 app.register_blueprint(links)
+app.register_blueprint(access)
 
 
 @app.get("/")
 async def index():
     return redirect("https://github.com/izxxr")
 
-async def get_link(code: str):
-    link = await Link.get_or_none(code=code)
-    if link is None:
-        abort(404, "Don't know what are you up to but that link DOES NOT exist!")
-    if not link.active:
-        abort(503, "This link is currently unavailable.")
-    return link
-
-async def register_visit(link: Link):
-    link.visit_count += 1
-    link.last_visited = datetime.now(tz=timezone.utc)
-    await link.save()
-    return redirect(link.url)
-
-@app.get("/<code>")
-@app.post("/<code>")
-async def access_link(code: str):
-    link = g.get("link")
-    if link is None:
-        g.link = link = await get_link(code)
-
-    if request.method != "POST":
-        link.raw_visit_count += 1
-        await link.save()
-        if link.password:
-            return await render_template("password.html", code=code)
-        else:
-            return await register_visit(link)
-    else:
-        form = await request.form
-        if form.get("Password") != link.password:
-            return await render_template(f"password.html", code=code, invalid=True)
-        else:
-            return await register_visit(link)
 
 @app.before_request
 async def before_request_hook():
