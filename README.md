@@ -1,5 +1,6 @@
 # nutshell
-Nutshell (as the name implies) is a pocket-sized, simple link shortener written in Python using Quart.
+[Nutshell](https://izxxr.medium.com/writing-a-pocket-sized-url-shortener-in-python-a1f9ab64b14a) (as the name implies) is a
+pocket-sized, simple link shortener written in Python using Quart.
 
 This is a personal link shortener that was written within the span of two hours and provides the
 following features:
