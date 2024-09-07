@@ -55,9 +55,9 @@ class LRUCache:
         link i.e. the one in the last of internal dictionary
         will be evicted.
         """
-        if len(self._cache) == self._maxlen:
+        if link.code not in self._cache and len(self._cache) == self._maxlen:
             self._cache.popitem()
-
+        
         self._cache[link.code] = link
         self._cache.move_to_end(link.code, last=False)
 
