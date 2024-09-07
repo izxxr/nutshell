@@ -103,6 +103,7 @@ async def update_link(code: str):
     data.pop("code", None)
     data.pop("created_at", None)
     data.pop("visit_count", None)
+    data.pop("raw_visit_count", None)
     data.pop("last_visited", None)
 
     link.update_from_dict(data)
