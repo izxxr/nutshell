@@ -45,7 +45,7 @@ async def create_link():
         return err.errors(include_input=False), 400
 
     cache = getcache()
-    link = await cache.get_link(link.code)
+    link = await cache.getch(link.code)
 
     if link is not None:
         return {"error": "Code is taken."}, 409
