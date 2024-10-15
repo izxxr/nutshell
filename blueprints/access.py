@@ -56,7 +56,7 @@ async def access_link(code: str):
     link = await get_link(code)
 
     if request.method != "POST":
-        link.raw_visit_count += 1
+        link.raw_visit_count = link.raw_visit_count + 1
         await link.save()
         if link.password:
             return await render_template("password.html", code=code)
